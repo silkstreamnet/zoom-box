@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body style="margin:0;">
+<a href="images/213_1.jpg" class="zoom-box"><img src="images/213_1.jpg" width="80" /></a>
+<a href="images/213_2.jpg" class="zoom-box">213_2.jpg</a>
+<div style="height:1800px; margin:100px 0 0 80px; background:#efefef;" id="main"></div>
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="js/zoom-box.js"></script>
+<script type="text/javascript">
+    (function(){
+        
+        /*$('.zoom-box').ZoomBox({
+        	position:'absolute',
+        	alignBoxTo: '.alignTo',
+        	fitBoxTo: '.alignTo'
+        });*/
+
+        var _main = $('#main');
+
+    	$('.zoom-box').ZoomBox({
+            alignBoxTo:false,
+            fitBoxTo:false,
+            onUpdateScale: function(settings){
+                var _window = $(window);
+                var newWidth = 0;
+                var newHeight = 0;
+                var newLeft = 0;
+                var newTop = 0;
+                var mainOffset = _main.offset();
+                var windowScrollTop = _window.scrollTop();
+                var scrollTopPush = mainOffset.top - windowScrollTop;
+                if (scrollTopPush < 0) scrollTopPush = 0;
+
+                newWidth = _main.outerWidth(false);
+                newHeight = _window.height() - scrollTopPush;
+                newLeft = mainOffset.left;
+                newTop = scrollTopPush;
+
+                settings.boxWidth = newWidth;
+                settings.boxHeight = newHeight;
+                settings.boxLeft = newLeft;
+                settings.boxTop = newTop;
+            }
+        });
+
+    })();
+</script>
+</body>
+</html>
