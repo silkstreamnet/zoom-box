@@ -20,29 +20,21 @@
 
         var _main = $('#main');
 
-    	$('.zoom-box').ZoomBox({
+    	$('body').ZoomBox({
             alignBoxTo:false,
             fitBoxTo:false,
+            delegate:'.zoom-box',
             onUpdateScale: function(settings){
                 var _window = $(window);
-                var newWidth = 0;
-                var newHeight = 0;
-                var newLeft = 0;
-                var newTop = 0;
                 var mainOffset = _main.offset();
                 var windowScrollTop = _window.scrollTop();
                 var scrollTopPush = mainOffset.top - windowScrollTop;
                 if (scrollTopPush < 0) scrollTopPush = 0;
 
-                newWidth = _main.outerWidth(false);
-                newHeight = _window.height() - scrollTopPush;
-                newLeft = mainOffset.left;
-                newTop = scrollTopPush;
-
-                settings.boxWidth = newWidth;
-                settings.boxHeight = newHeight;
-                settings.boxLeft = newLeft;
-                settings.boxTop = newTop;
+                settings.boxWidth = _main.outerWidth(false);
+                settings.boxHeight = _window.height() - scrollTopPush;
+                settings.boxLeft = mainOffset.left;
+                settings.boxTop = scrollTopPush;
             }
         });
 

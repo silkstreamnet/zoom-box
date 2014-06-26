@@ -29,12 +29,15 @@ View index.html for example code.
 Things to Add
 @@@@@@@@@@@@@
 
-- 
+- create separate functionality for touch movement to be relative dragging rather than absolute.
 
 
 @@@@@@@
 Updates
 @@@@@@@
+
+=== v1-04 (stable) ===
+- modified touch movement to be inverted like dragging (still 1:1 movement)
 
 === v1-03 (stable) ===
 - changed the preload function to a load full image function
