@@ -25,6 +25,17 @@ Options:
 View index.html for example code.
 
 
+@@@@@@@@@@@@@@@@@@@@@@@
+Things to change for v2
+@@@@@@@@@@@@@@@@@@@@@@@
+
+- remove click event functionality, activation of the plugin should be initialised by user code.
+- change the initial object focus to be the container for the zoom box.
+- add option to set position as fixed or absolute. (useful for fixed + body container setup)
+- make sure you can separate the mouse trap and the image display.
+
+
+
 @@@@@@@@@@@@@
 Things to Add
 @@@@@@@@@@@@@
