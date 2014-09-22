@@ -5,7 +5,13 @@
         renderContainer:false,
         renderOverImage:false,
         zoomSrc:'',
-        close:''
+        close:'',
+        refreshRate:30,
+        fadeDuration:400,
+        onRemove:false,
+        afterRemove:false,
+        onCreate:false,
+        afterCreate:false
     };
 
     var newid = 0;
@@ -43,6 +49,18 @@
         }
     };
 
+    function loadImageReady(src,width,height,controllers,settings)
+    {
+        controllers.moveready = true;
+        controllers.naturalImgWidth = width;
+        controllers.naturalImgHeight = height;
+        controllers.$zoomboxImage.attr('src',src);
+        controllers.$zoomboxImage.css('left',((controllers.$zoombox.width()-width)/2)+'px');
+        controllers.$zoomboxImage.css('top',((controllers.$zoombox.height()-width)/2)+'px');
+        controllers.$zoombox.trigger('mousemove');
+        scale(controllers,settings);
+    }
+
     function loadImage(controllers,settings)
     {
         var src = (controllers.zoomSrc) ? controllers.zoomSrc : controllers.originalSrc;
@@ -55,19 +73,13 @@
             setTimeout(function(){
                 if (nimg.complete)
                 {
-                    controllers.naturalImgWidth = nimg.width;
-                    controllers.naturalImgHeight = nimg.height;
-                    controllers.$zoomboxImage.attr('src',src);
-                    scale(controllers,settings);
+                    loadImageReady(src,nimg.width,nimg.height,controllers,settings);
                 }
                 else
                 {
                     nimg.onload = function()
                     {
-                        controllers.naturalImgWidth = this.width;
-                        controllers.naturalImgHeight = this.height;
-                        controllers.$zoomboxImage.attr('src',src);
-                        scale(controllers,settings);
+                        loadImageReady(src,this.width,this.height,controllers,settings);
                     };
                 }
 
@@ -98,8 +110,23 @@
 
     function scale(controllers,settings)
     {
-        var boxWidth = (settings.renderOverImage) ? controllers.$oimage.width() : '100%';
-        var boxHeight = (settings.renderOverImage) ? controllers.$oimage.height() : '100%';
+        var boxWidth = '100%';
+        var boxHeight = '100%';
+
+        if (settings.renderOverImage)
+        {
+            var oimage_width = controllers.$oimage.width();
+            var oimage_height = controllers.$oimage.height();
+
+            var parent_width = controllers.$oimage.parent().width();
+            var parent_height = controllers.$oimage.parent().height();
+
+            if (oimage_width < parent_width) boxWidth = oimage_width;
+            else boxWidth = parent_width;
+
+            if (oimage_height < parent_height) boxHeight = oimage_height;
+            else boxHeight = parent_height;
+        }
 
         if (typeof boxWidth == "string" && boxWidth.match(/[0-9]{1,3}%/))
         {
@@ -148,10 +175,10 @@
         controllers.$zoomboxImage.width(imgWidth);
         controllers.$zoomboxImage.height(imgHeight);
 
-        var newOffset = controllers.$zoombox.offset();
+        //var newOffset = controllers.$zoombox.position();
 
-        controllers.mouseX = newOffset.left + (controllers.$zoombox.width()/2);
-        controllers.mouseY = newOffset.top + (controllers.$zoombox.height()/2);
+        //controllers.mouseX = newOffset.left + (controllers.$zoombox.width()/2);
+        //controllers.mouseY = newOffset.top + (controllers.$zoombox.height()/2);
         move(controllers,settings);
     }
 
@@ -253,6 +280,8 @@
 
     function create(controllers,settings)
     {
+        if (typeof settings.onCreate === "function") settings.onCreate(settings);
+
         var originalImage = getOriginalImage(controllers.$oimage);
         controllers.originalSrc = originalImage.src;
         controllers.naturalImgWidth = originalImage.width;
@@ -266,7 +295,7 @@
         if (!controllers.$renderContainer || !controllers.$renderContainer.length)
         {
             controllers.$renderContainer = controllers.$oimageContainer;
-            settings.renderOverImage = true;
+            //settings.renderOverImage = true;
         }
 
         if (controllers.$renderContainer && controllers.$renderContainer.length)
@@ -316,9 +345,7 @@
                 'visibility':'visible',
                 'overflow':'hidden',
                 'display':'none'
-            }).fadeIn(400,function(){
-                setTimeout(function(){controllers.moveready = true;},100);
-            });
+            }).fadeIn(settings.fadeDuration);
 
             //prevent img drag
             controllers.$zoomboxImage.on('dragstart',function(e){
@@ -328,8 +355,9 @@
             controllers.$zoombox.on('mousemove',function(e){
                 if (controllers.moveready)
                 {
-                    controllers.mouseX = e.pageX;
-                    controllers.mouseY = e.pageY;
+                    var zoombox_offset = controllers.$zoombox.offset();
+                    controllers.mouseX = e.pageX-zoombox_offset.left;
+                    controllers.mouseY = e.pageY-zoombox_offset.top;
                     controllers.invert = false;
                     move(controllers,settings);
                 }
@@ -337,19 +365,22 @@
                 e.preventDefault();
                 if (controllers.moveready)
                 {
-                    controllers.mouseX = e.originalEvent.touches[0].pageX;
-                    controllers.mouseY = e.originalEvent.touches[0].pageY;
+                    var zoombox_offset = controllers.$zoombox.offset();
+                    controllers.mouseX = e.originalEvent.touches[0].pageX-zoombox_offset.left;
+                    controllers.mouseY = e.originalEvent.touches[0].pageY-zoombox_offset.top;
                     controllers.invert = true;
                     move(controllers,settings);
                 }
             }).on('mousedown',function(e){
                 e.preventDefault();
-                controllers.mouseDownX = e.pageX;
-                controllers.mouseDownY = e.pageY;
+                var zoombox_offset = controllers.$zoombox.offset();
+                controllers.mouseDownX = e.pageX-zoombox_offset.left;
+                controllers.mouseDownY = e.pageY-zoombox_offset.top;
             }).on('mouseup',function(e){
                 e.preventDefault();
                 var pr = 5; //click range pixels.
-                if (e.pageX <= controllers.mouseDownX+pr && e.pageX >= controllers.mouseDownX-pr && e.pageY <= controllers.mouseDownY+pr && e.pageY >= controllers.mouseDownY-pr)
+                var zoombox_offset = controllers.$zoombox.offset();
+                if (e.pageX-zoombox_offset.left <= controllers.mouseDownX+pr && e.pageX-zoombox_offset.left >= controllers.mouseDownX-pr && e.pageY-zoombox_offset.top <= controllers.mouseDownY+pr && e.pageY-zoombox_offset.top >= controllers.mouseDownY-pr)
                 {
                     remove(controllers,settings);
                 }
@@ -365,6 +396,8 @@
             loadImage(controllers,settings);
 
             controllers.isopen = true;
+
+            if (typeof settings.afterCreate === "function") settings.afterCreate(settings);
         }
         else
         {
@@ -376,9 +409,11 @@
     {
         if (controllers.isopen)
         {
+            if (typeof settings.onRemove === "function") settings.onRemove(settings);
+
             controllers.isopen = false;
 
-            controllers.$zoombox.fadeOut(400,function(){
+            controllers.$zoombox.fadeOut(settings.fadeDuration,function(){
                 controllers.$zoombox.remove();
                 controllers.$mousetrap.remove();
 
@@ -389,6 +424,8 @@
                 }
 
                 controllers.$sobjects.attr('data-zbid','');
+
+                if (typeof settings.afterRemove === "function") settings.afterRemove(settings);
             });
         }
     }
@@ -397,15 +434,27 @@
     {
         if ($objects.length > 0)
         {
-            var valid = true;
+            var existing_id = -1;
 
             $objects.each(function(){
-                if (getAttr($(this),'data-zbid')) valid = false;
+                var eid = getAttr($(this),'data-zbid');
+                if (eid !== '') existing_id = parseInt(eid);
             });
 
-            if (valid)
+            if (existing_id >= 0 && zb[existing_id] && zb[existing_id].length > 0)
             {
-                var timeoutSpeed = Math.round(1000/33);
+                for (var j=0; j<zb[existing_id].length; j++)
+                {
+                    if (!zb[existing_id][j].controllers.isopen)
+                    {
+                        zb[existing_id][j].controllers.$zoombox.stop(true,false).fadeTo(settings.fadeDuration,1);
+                        zb[existing_id][j].controllers.isopen = true;
+                    }
+                }
+            }
+            else
+            {
+                var timeoutSpeed = Math.round(1000/settings.refreshRate);
                 newid++;
                 zb[newid] = [];
                 $objects.attr('data-zbid',newid);
@@ -466,6 +515,22 @@
         }
     }
 
+    function scaleAll()
+    {
+        for (var i in zb)
+        {
+            if (zb.hasOwnProperty(i))
+            {
+                if (zb[i] && zb[i].length)
+                {
+                    for (var j=0; j<zb[i].length; j++)
+                    {
+                        scale(zb[i][j].controllers,zb[i][j].settings);
+                    }
+                }
+            }
+        }
+    }
 
     //screen checks
     var resizeCheck = false;
@@ -474,13 +539,7 @@
         {
             resizeCheck = true;
             setTimeout(function(){
-                for (var i=0; i<zb_s.length; i++)
-                {
-                    if (typeof zb_s[i].zbobjects !== "undefined")
-                    {
-                        scale(zb_s[i].zbobjects,zb_s[i].settings);
-                    }
-                }
+                scaleAll();
                 resizeCheck = false;
             },100);
         }
@@ -490,22 +549,10 @@
     $(window).on('scroll.zoombox',function(){
         if (scrollCheck == false)
         {
-            for (var i=0; i<zb_s.length; i++)
-            {
-                if (typeof zb_s[i].zbobjects !== "undefined")
-                {
-                    scale(zb_s[i].zbobjects,zb_s[i].settings);
-                }
-            }
+            scaleAll();
             scrollCheck = true;
             setTimeout(function(){
-                for (var i=0; i<zb_s.length; i++)
-                {
-                    if (typeof zb_s[i].zbobjects !== "undefined")
-                    {
-                        scale(zb_s[i].zbobjects,zb_s[i].settings);
-                    }
-                }
+                scaleAll();
                 scrollCheck = false;
             },10);
         }
