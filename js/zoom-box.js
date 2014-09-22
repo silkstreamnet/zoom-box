@@ -2,56 +2,72 @@
 (function($){
 
     var defaults = {
-        boxWidth: 'auto',
-        boxHeight: 'auto',
-        boxLeft: 'auto',
-        boxTop: 'auto',
-        imageSource: 'auto', //uses the href if applied to an anchor / otherwise won't work.
-        appendBoxTo: 'body', //can be string or object
-        fitBoxTo: window,
-        alignBoxTo: window,
-        boxId: '',
-        boxClass: '',
-        position: 'fixed',
-        closeText: '',
-        delegate: '',
-        onUpdateScale: false
+        renderContainer:false,
+        renderOverImage:false,
+        zoomSrc:'',
+        close:''
     };
 
-    var zb_s = [];
+    var newid = 0;
+    var zb = [];
 
     $.fn.ZoomBox = function(settings)
     {
         settings = settings || {};
-        var n_settings = $.extend({},defaults,settings);
-        setup($(this),n_settings);
+        var $this = $(this);
+
+        if (typeof settings == "string")
+        {
+            var id = getAttr($this,'data-zbid');
+
+            if (id && zb[id] && zb[id].length > 0)
+            {
+                for (var it=0; it<zb[id].length; it++)
+                {
+                    switch (settings)
+                    {
+                        default: break;
+
+                        case 'remove':
+                            remove(zb[id][it].controllers,zb[id][it].settings);
+                            if (it == zb[id].length) delete zb[id];
+                            break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            var n_settings = $.extend({},defaults,settings);
+            process($this,n_settings);
+        }
     };
 
-    function loadImage(objects,settings) 
+    function loadImage(controllers,settings)
     {
-        settings.naturalImgWidth = 0;
-        settings.naturalImgHeight = 0;
+        var src = (controllers.zoomSrc) ? controllers.zoomSrc : controllers.originalSrc;
 
-        if (settings._imageSource)
+        if (src)
         {
             var nimg = new Image();
-            nimg.src = settings._imageSource;
+            nimg.src = src;
+
             setTimeout(function(){
                 if (nimg.complete)
                 {
-                    settings.naturalImgWidth = nimg.width;
-                    settings.naturalImgHeight = nimg.height;
-                    objects.zbimg.attr('src',settings._imageSource);
-                    scale(objects,settings);
+                    controllers.naturalImgWidth = nimg.width;
+                    controllers.naturalImgHeight = nimg.height;
+                    controllers.$zoomboxImage.attr('src',src);
+                    scale(controllers,settings);
                 }
                 else
                 {
                     nimg.onload = function()
                     {
-                        settings.naturalImgWidth = this.width;
-                        settings.naturalImgHeight = this.height;
-                        objects.zbimg.attr('src',settings._imageSource);
-                        scale(objects,settings);
+                        controllers.naturalImgWidth = this.width;
+                        controllers.naturalImgHeight = this.height;
+                        controllers.$zoomboxImage.attr('src',src);
+                        scale(controllers,settings);
                     };
                 }
 
@@ -80,253 +96,94 @@
         }
     }
 
-    function new_zb(object,settings)
+    function scale(controllers,settings)
     {
-        settings.zbid = zb_s.length+1;
-        settings.animator = {
-            timer: false,
-            startTime: 0
-        };
-        zb_s.push({object:object,settings:settings});
-    }
+        var boxWidth = (settings.renderOverImage) ? controllers.$oimage.width() : '100%';
+        var boxHeight = (settings.renderOverImage) ? controllers.$oimage.height() : '100%';
 
-    function scale(objects,settings)
-    {
-        if (objects.zbobj)
+        if (typeof boxWidth == "string" && boxWidth.match(/[0-9]{1,3}%/))
         {
-            if (typeof settings.onUpdateScale === "function") settings.onUpdateScale(settings);
-
-            var _body = $('body');
-            var hidescrollbars = false;
-            if (settings.fitBoxTo == window && (settings.position = 'fixed' || _body.height() <= $(window).height()))
-            {
-                hidescrollbars = true;
-
-                var old_body_width = _body.width();
-                _body.css('overflow','hidden');
-                var new_body_width = _body.width();
-
-                if (new_body_width > old_body_width)
-                {
-                    var old_margin_right = parseInt(_body.css('margin-right'));
-                    var new_margin_right = old_margin_right+(new_body_width-old_body_width);
-                    _body.css('margin-right',new_margin_right+'px');
-                }
-            }
-
-            objects.zbobj.css({
-                'top':'0',
-                'left':'0'
-            });
-
-            if (typeof settings.boxClass == "string" && settings.boxClass != '') objects.zbobj.addClass(settings.boxClass);
-            if (typeof settings.boxId == "string" && settings.boxId != '') objects.zbobj.attr('id',settings.boxId);
-
-            var boxWidth = settings.boxWidth;
-            var boxHeight = settings.boxHeight;
-            var boxLeft = settings.boxLeft;
-            var boxTop = settings.boxTop;
-
-            if (boxWidth != 'not set')
-            {
-                if (boxWidth == 'auto')
-                {
-                    boxWidth = (settings.fitBoxTo == window) ? objects.relativeFit.width() : objects.relativeFit.outerWidth(false);
-                    objects.zbobj.width(boxWidth);
-                }
-                else if (typeof boxWidth == "string" && boxWidth.match(/[0-9]{1,2}%/))
-                {
-                    objects.zbobj.css('width',boxWidth);
-                }
-                else
-                {
-                    objects.zbobj.width(parseFloat(boxWidth));
-                }
-            }
-
-            if (boxHeight != 'not set')
-            {
-                if (boxHeight == 'auto')
-                {
-                    boxHeight = (settings.fitBoxTo == window) ? objects.relativeFit.height() : objects.relativeFit.outerHeight(false);
-                    objects.zbobj.height(boxHeight);
-                }
-                else if (typeof boxHeight == "string" && boxHeight.match(/[0-9]{1,2}%/))
-                {
-                    objects.zbobj.css('height',boxHeight);
-                }
-                else
-                {
-                    objects.zbobj.height(parseFloat(boxHeight));
-                }
-            }
-
-            var curOffset = objects.zbobj.offset();
-            var relOffset = (objects.relativeAlign) ? objects.relativeAlign.offset() : 0;
-
-            if (boxLeft != 'not set')
-            {
-                if (boxLeft == 'auto')
-                {
-                    if (settings.alignBoxTo == window)
-                    {
-                        if (settings.position != 'fixed' && curOffset.left > 0)
-                        {
-                            boxLeft = -curOffset.left;
-                        }
-                        else
-                        {
-                            boxLeft = 0;
-                        }
-                    }
-                    else
-                    {
-                        if (curOffset.left == relOffset.left)
-                        {
-                            boxLeft = 0;
-                        }
-                        else if (curOffset.left > relOffset.left)
-                        {
-                            boxLeft = 0-(curOffset.left-relOffset.left);
-                        }
-                        else //if (relOffset.left > curOffset.left)
-                        {
-                            boxLeft = relOffset.left-curOffset.left;
-                        }
-                    }
-
-                    objects.zbobj.css('left',boxLeft+'px');
-                }
-                else if (typeof boxLeft == "string" && boxLeft.match(/[0-9]{1,2}%/))
-                {
-                    objects.zbobj.css('left',boxLeft);
-                }
-                else
-                {
-                    objects.zbobj.css('left',parseFloat(boxLeft)+'px');
-                }
-            }
-            else
-            {
-                objects.zbobj.css('left','');
-            }
-
-            if (boxTop != 'not set')
-            {
-                if (boxTop == 'auto')
-                {
-                    if (settings.alignBoxTo == window)
-                    {
-                        if (settings.position != 'fixed' && curOffset.top > 0)
-                        {
-                            boxTop = -curOffset.top;
-                        }
-                        else
-                        {
-                            boxTop = 0;
-                        }
-                    }
-                    else
-                    {
-                        if (curOffset.top == relOffset.top)
-                        {
-                            boxTop = 0;
-                        }
-                        else if (curOffset.top > relOffset.top)
-                        {
-                            boxTop = 0-(curOffset.top-relOffset.top);
-                        }
-                        else //if (relOffset.top > curOffset.top)
-                        {
-                            boxTop = relOffset.top-curOffset.top;
-                        }
-                    }
-
-                    objects.zbobj.css('top',boxTop+'px');
-                }
-                else if (typeof boxTop == "string" && boxTop.match(/[0-9]{1,2}%/))
-                {
-                    objects.zbobj.css('top',boxTop);
-                }
-                else
-                {
-                    objects.zbobj.css('top',parseFloat(boxTop)+'px');
-                }
-            }
-            else
-            {
-                objects.zbobj.css('top','');
-            }
-
-            var natImgWidth = settings.naturalImgWidth;
-            var natImgHeight = settings.naturalImgHeight;
-            var fitWidth = objects.zbobj.width();
-            var fitHeight = objects.zbobj.height();
-
-            // which dimension has the largest percentage difference.
-            var percDiffWidth = natImgWidth / fitWidth; // 500 / 700
-            var percDiffHeight = natImgHeight / fitHeight;
-
-            var imgWidth = natImgWidth;
-            var imgHeight = natImgHeight;
-
-            if (percDiffHeight < 1 || percDiffWidth < 1)
-            {
-                if (percDiffWidth < percDiffHeight)
-                {
-                    imgWidth = fitWidth;
-                    imgHeight *= (imgWidth/natImgWidth);
-                }
-                else
-                {
-                    imgHeight = fitHeight;
-                    imgWidth *= (imgHeight/natImgHeight);
-                }
-            }
-
-            objects.zbimg.width(imgWidth);
-            objects.zbimg.height(imgHeight);
-
-            if (hidescrollbars && settings.position != 'fixed') _body.css('overflow',settings.defaultBodyOverflow);
-
-            var newOffset = objects.zbobj.offset();
-
-            settings.mouseX = newOffset.left + (objects.zbobj.width()/2);
-            settings.mouseY = newOffset.top + (objects.zbobj.height()/2);
-            move(objects,settings);
+            controllers.$zoombox.css('width',boxWidth);
         }
+        else if (typeof boxWidth == "number")
+        {
+            controllers.$zoombox.width(boxWidth);
+        }
+
+        if (typeof boxHeight == "string" && boxHeight.match(/[0-9]{1,3}%/))
+        {
+            controllers.$zoombox.css('height',boxHeight);
+        }
+        else if (typeof boxHeight == "number")
+        {
+            controllers.$zoombox.height(boxHeight);
+        }
+
+        var natImgWidth = controllers.naturalImgWidth;
+        var natImgHeight = controllers.naturalImgHeight;
+        var fitWidth = controllers.$zoombox.width();
+        var fitHeight = controllers.$zoombox.height();
+
+        // which dimension has the largest percentage difference.
+        var percDiffWidth = natImgWidth / fitWidth; // 500 / 700
+        var percDiffHeight = natImgHeight / fitHeight;
+
+        var imgWidth = natImgWidth;
+        var imgHeight = natImgHeight;
+
+        if (percDiffHeight < 1 || percDiffWidth < 1)
+        {
+            if (percDiffWidth < percDiffHeight)
+            {
+                imgWidth = fitWidth;
+                imgHeight *= (imgWidth/natImgWidth);
+            }
+            else
+            {
+                imgHeight = fitHeight;
+                imgWidth *= (imgHeight/natImgHeight);
+            }
+        }
+
+        controllers.$zoomboxImage.width(imgWidth);
+        controllers.$zoomboxImage.height(imgHeight);
+
+        var newOffset = controllers.$zoombox.offset();
+
+        controllers.mouseX = newOffset.left + (controllers.$zoombox.width()/2);
+        controllers.mouseY = newOffset.top + (controllers.$zoombox.height()/2);
+        move(controllers,settings);
     }
 
-    function animatePosition(objects, settings)
+    function animatePosition(controllers, settings)
     {
-        var timeoutSpeed = settings.timeoutSpeed;
+        var timeoutSpeed = controllers.timeoutSpeed;
 
-        var zbobj_width = objects.zbobj.width();
-        var zbobj_height = objects.zbobj.height();
-        var zbimg_width = objects.zbimg.width();
-        var zbimg_height = objects.zbimg.height();
-        var zbobj_offset = objects.zbobj.offset();
-        var zbimg_offset = objects.zbimg.offset();
+        var zbobj_width = controllers.$zoombox.width();
+        var zbobj_height = controllers.$zoombox.height();
+        var zbimg_width = controllers.$zoomboxImage.width();
+        var zbimg_height = controllers.$zoomboxImage.height();
+        var zbimg_offset = controllers.$zoomboxImage.position();
 
-        var targetleft = ((((settings.mouseX-zbobj_offset.left)*-1)/(zbobj_width))*((zbimg_width-zbobj_width)));
-        var targettop = ((((settings.mouseY-zbobj_offset.top)*-1)/(zbobj_height))*((zbimg_height-zbobj_height)));
+        var targetleft = ((((controllers.mouseX)*-1)/(zbobj_width))*((zbimg_width-zbobj_width)));
+        var targettop = ((((controllers.mouseY)*-1)/(zbobj_height))*((zbimg_height-zbobj_height)));
 
-        if (settings.invert)
+        if (controllers.invert)
         {
             targetleft = ((zbimg_width-zbobj_width)*-1)+Math.abs(targetleft);
             targettop = ((zbimg_height-zbobj_height)*-1)+Math.abs(targettop);
         }
 
         var max_nwidth = (zbimg_width == zbobj_width) ? 0 : (zbimg_width-zbobj_width)*-1;
-        if (targetleft >= 0) targetleft = 0;
+        if (targetleft > 0) targetleft = 0;
         else if (targetleft < max_nwidth) targetleft = max_nwidth;
 
         var max_nheight = (zbimg_height == zbobj_height) ? 0 : (zbimg_height-zbobj_height)*-1;
-        if (targettop >= 0) targettop = 0;
+        if (targettop > 0) targettop = 0;
         else if (targettop < max_nheight) targettop = max_nheight;
 
-        var curleft = parseFloat(zbimg_offset.left-zbobj_offset.left);
-        var curtop = parseFloat(zbimg_offset.top-zbobj_offset.top);
+        var curleft = parseFloat(zbimg_offset.left);
+        var curtop = parseFloat(zbimg_offset.top);
 
         var newleft = curleft;
         var newtop = curtop;
@@ -339,7 +196,7 @@
             var newleft_offset = (targetleft-curleft)*speed;
             if (newleft_diff < tinyrange && newleft_diff > -tinyrange) newleft_offset = newleft_diff;
             newleft = Math.floor((curleft+newleft_offset)*10)/10;
-            objects.zbimg.css('left',newleft+'px');
+            controllers.$zoomboxImage.css('left',newleft+'px');
         }
 
         if (targettop != curtop)
@@ -348,33 +205,30 @@
             var newtop_offset = (targettop-curtop)*speed;
             if (newtop_diff < tinyrange && newtop_diff > -tinyrange) newtop_offset = newtop_diff;
             newtop = Math.floor((curtop+newtop_offset)*10)/10;
-            objects.zbimg.css('top',newtop+'px');
+            controllers.$zoomboxImage.css('top',newtop+'px');
         }
 
-        if (settings.animator.timer !== false)
+        if (controllers.animator.timer !== false)
         {
-            clearTimeout(settings.animator.timer);
-            settings.animator.timer = false;
+            clearTimeout(controllers.animator.timer);
+            controllers.animator.timer = false;
         }
 
-        if (settings.animator.timer === false && (curleft != targetleft || curtop != targettop))
+        if (controllers.animator.timer === false && (curleft != targetleft || curtop != targettop))
         {
-            settings.animator.timer = setTimeout(function(){animatePosition(objects,settings);},timeoutSpeed);
+            controllers.animator.timer = setTimeout(function(){animatePosition(controllers,settings);},timeoutSpeed);
         }
     }
 
-    function move(objects,settings)
+    function move(controllers,settings)
     {
-        if (objects.zbobj && settings)
+        if (controllers.animator.timer === false)
         {
-            if (settings.animator.timer === false)
-            {
-                animatePosition(objects, settings);
-            }
+            animatePosition(controllers, settings);
         }
     }
 
-    function getInitialImage(clickobject)
+    function getOriginalImage($img)
     {
         //return src, width, height
         var data = {
@@ -383,207 +237,232 @@
             height: 0
         };
 
-        var img = clickobject;
-
-        data.src = getAttr(img,'src');
-        
-        if (!data.src)
+        if ($img && $img.length)
         {
-            var imgs = clickobject.find('img');
-            if (imgs.length > 0)
+            data.src = getAttr($img,'src');
+
+            if (data.src)
             {
-                img = imgs.eq(0);
-                data.src = getAttr(img,'src');
+                data.width = $img.width();
+                data.height = $img.height();
             }
-        }
-
-        if (data.src)
-        {
-            data.width = img.width();
-            data.height = img.height();
         }
 
         return data;
     }
 
-    function create(clickobject,settings)
+    function create(controllers,settings)
     {
-        var _body = $('body');
-        settings.defaultBodyOverflow = _body.css('overflow');
-        settings.defaultMarginRight = _body.css('margin-right');
-        var zbid = settings.zbid;
-        var initialImage = getInitialImage(clickobject);
-        var imgsrc = initialImage.src;
-        settings.naturalImgWidth = initialImage.width;
-        settings.naturalImgHeight = initialImage.height;
-        var closeText = (typeof settings.closeText == "string") ? settings.closeText : '';
-        var zbhtml = '<div class="zoom-box-container" data-zbid="'+zbid+'"><a href="javascript:void(0);" class="zoom-box-close">'+closeText+'</a><img src="'+imgsrc+'" alt="" /></div>';
-        var objects = {
-            relativeHolder: (typeof settings.appendBoxTo == "object" && settings.appendBoxTo != window) ? settings.appendBoxTo : $(settings.appendBoxTo), //required
-            relativeFit: ((typeof settings.fitBoxTo == "object" && settings.fitBoxTo != window) || !settings.fitBoxTo) ? settings.fitBoxTo : $(settings.fitBoxTo),
-            relativeAlign: ((typeof settings.alignBoxTo == "object" && settings.alignBoxTo != window) || !settings.alignBoxTo) ? settings.alignBoxTo : $(settings.alignBoxTo)
-        };
+        var originalImage = getOriginalImage(controllers.$oimage);
+        controllers.originalSrc = originalImage.src;
+        controllers.naturalImgWidth = originalImage.width;
+        controllers.naturalImgHeight = originalImage.height;
 
-        if (objects.relativeHolder.length)
+        var close = (typeof settings.close == "string") ? settings.close : '';
+        var html = '<div class="zoom-box-container"><a href="javascript:void(0);" class="zoom-box-close">'+close+'</a><img class="zoom-box-image" src="'+controllers.originalSrc+'" alt="" /></div>';
+        
+        controllers.$renderContainer = (!controllers.renderContainer || (typeof controllers.renderContainer == "object" && controllers.renderContainer != window)) ? controllers.renderContainer: $(controllers.renderContainer);
+
+        if (!controllers.$renderContainer || !controllers.$renderContainer.length)
         {
-            var moveready = false;
+            controllers.$renderContainer = controllers.$oimageContainer;
+            settings.renderOverImage = true;
+        }
 
-            objects.relativeHolder = objects.relativeHolder.eq(0);
-            objects.relativeHolder.append(zbhtml);
+        if (controllers.$renderContainer && controllers.$renderContainer.length)
+        {
+            if (controllers.$renderContainer.length > 1)
+            {
+                controllers.$renderContainer = controllers.$renderContainer.eq(0);
+            }
 
-            objects.zbobj = objects.relativeHolder.find('.zoom-box-container[data-zbid="'+zbid+'"]');
-            objects.zbimg = objects.zbobj.find('img');
-            objects.zbclose = objects.zbobj.find('a.zoom-box-close');
+            controllers.$oimage.before('<div class="zoom-box-mousetrap"></div>');
 
-            objects.zbobj.css({
-                'position':settings.position,
-                'z-index':'990',
+            if (settings.renderOverImage) controllers.$oimage.before(html);
+            else controllers.$renderContainer.prepend(html);
+
+            controllers.$mousetrap = controllers.$renderContainer.find('.zoom-box-mousetrap');
+            controllers.$zoombox = controllers.$renderContainer.find('.zoom-box-container');
+            controllers.$zoomboxImage = controllers.$zoombox.find('.zoom-box-image');
+            controllers.$zoomboxClose = controllers.$zoombox.find('.zoom-box-close');
+
+            controllers.$zoombox.css({
+                'position':'absolute',
+                'z-index':'90',
                 'visibility':'hidden'
             });
 
-            objects.zbimg.css({
+            controllers.$zoomboxImage.css({
                 'position':'absolute',
-                'z-index':'991',
+                'z-index':'91',
                 'max-width':'none',
-                'max-height':'none'
+                'max-height':'none',
+                'display':'block'
             });
 
-            objects.zbclose.css({
+            controllers.$zoomboxClose.css({
                 'position':'absolute',
-                'z-index':'992'
+                'z-index':'92'
             });
 
-            scale(objects,settings);
+            controllers.$mousetrap.css({
+                'position':'absolute',
+                'z-index':'89'
+            });
 
-            objects.zbobj.css({
+            scale(controllers,settings);
+
+            controllers.$zoombox.css({
                 'visibility':'visible',
                 'overflow':'hidden',
                 'display':'none'
             }).fadeIn(400,function(){
-                setTimeout(function(){moveready = true;},100);
+                setTimeout(function(){controllers.moveready = true;},100);
             });
 
             //prevent img drag
-            objects.zbimg.on('dragstart',function(e){
+            controllers.$zoomboxImage.on('dragstart',function(e){
                 e.preventDefault();
             });
 
-            objects.zbobj.on('mousemove',function(e){
-                if (moveready)
+            controllers.$zoombox.on('mousemove',function(e){
+                if (controllers.moveready)
                 {
-                    settings.mouseX = e.pageX;
-                    settings.mouseY = e.pageY;
-                    settings.invert = false;
-                    move(objects,settings);
+                    controllers.mouseX = e.pageX;
+                    controllers.mouseY = e.pageY;
+                    controllers.invert = false;
+                    move(controllers,settings);
                 }
             }).on('touchmove',function(e){
                 e.preventDefault();
-                if (moveready)
+                if (controllers.moveready)
                 {
-                    settings.mouseX = e.originalEvent.touches[0].pageX;
-                    settings.mouseY = e.originalEvent.touches[0].pageY;
-                    settings.invert = true;
-                    move(objects,settings);
+                    controllers.mouseX = e.originalEvent.touches[0].pageX;
+                    controllers.mouseY = e.originalEvent.touches[0].pageY;
+                    controllers.invert = true;
+                    move(controllers,settings);
                 }
             }).on('mousedown',function(e){
                 e.preventDefault();
-                settings.mouseDownX = e.pageX;
-                settings.mouseDownY = e.pageY;
+                controllers.mouseDownX = e.pageX;
+                controllers.mouseDownY = e.pageY;
             }).on('mouseup',function(e){
                 e.preventDefault();
                 var pr = 5; //click range pixels.
-                if (e.pageX <= settings.mouseDownX+pr && e.pageX >= settings.mouseDownX-pr && e.pageY <= settings.mouseDownY+pr && e.pageY >= settings.mouseDownY-pr)
+                if (e.pageX <= controllers.mouseDownX+pr && e.pageX >= controllers.mouseDownX-pr && e.pageY <= controllers.mouseDownY+pr && e.pageY >= controllers.mouseDownY-pr)
                 {
-                    remove(objects,settings);
+                    remove(controllers,settings);
                 }
-                settings.mouseDownX = -999;
-                settings.mouseDownY = -999;
+                controllers.mouseDownX = -999;
+                controllers.mouseDownY = -999;
             });
 
-            objects.zbclose.click(function(e){
+            controllers.$zoomboxClose.click(function(e){
                 e.preventDefault();
-                remove(objects,settings);
+                remove(controllers,settings);
             });
 
-            zb_s[zbid-1].zbobjects = objects;
+            loadImage(controllers,settings);
 
-            settings._imageSource = (settings.imageSource == 'auto') ? getAttr(clickobject,'href') : settings.imageSource;
-            loadImage(objects,settings);
-
-            settings.isopen = true;
+            controllers.isopen = true;
         }
         else
         {
-            settings.isopen = false;
+            controllers.isopen = false;
         }
     }
 
-    function remove(objects,settings)
+    function remove(controllers,settings)
     {
-        if (settings.isopen)
+        if (controllers.isopen)
         {
-            objects.zbobj.fadeOut(400,function(){
-                objects.zbobj.remove();
-                objects = {};
-                delete zb_s[settings.zbid-1].zbobjects;
+            controllers.isopen = false;
 
-                if (settings.animator.timer !== false)
+            controllers.$zoombox.fadeOut(400,function(){
+                controllers.$zoombox.remove();
+                controllers.$mousetrap.remove();
+
+                if (controllers.animator.timer !== false)
                 {
-                    clearTimeout(settings.animator.timer);
-                    settings.animator.timer = false;
+                    clearTimeout(controllers.animator.timer);
+                    controllers.animator.timer = false;
                 }
 
-                $('body').css({
-                    'overflow':settings.defaultBodyOverflow,
-                    'margin-right':settings.defaultMarginRight
+                controllers.$sobjects.attr('data-zbid','');
+            });
+        }
+    }
+
+    function process($objects,settings)
+    {
+        if ($objects.length > 0)
+        {
+            var valid = true;
+
+            $objects.each(function(){
+                if (getAttr($(this),'data-zbid')) valid = false;
+            });
+
+            if (valid)
+            {
+                var timeoutSpeed = Math.round(1000/33);
+                newid++;
+                zb[newid] = [];
+                $objects.attr('data-zbid',newid);
+
+                $objects.each(function(){
+                    var $object = $(this);
+                    var $imgs = $object;
+
+                    if (!getAttr($object,'src'))
+                    {
+                        $imgs = $object.find('img');
+                    }
+
+                    $imgs.each(function(){
+
+                        var $img = $(this);
+                        var t_settings = $.extend({},settings);
+
+                        applyDataSettings($img,t_settings);
+
+                        var controllers = {
+                            id:newid,
+                            $sobjects:$objects,
+                            $oimage:$img,
+                            $oimageContainer:$img.parent(),
+                            $renderContainer:false,
+                            $zoombox:false,
+                            $zoomboxImage:false,
+                            $zoomboxClose:false,
+                            $mousetrap:false,
+                            originalSrc:'',
+                            zoomSrc:'',
+                            renderOverImage:false,
+                            isopen:false,
+                            naturalImgWidth: 0,
+                            naturalImgHeight: 0,
+                            timeoutSpeed:timeoutSpeed,
+                            mouseX:0,
+                            mouseY:0,
+                            mouseDownX: -999,
+                            mouseDownY: -999,
+                            invert:false,
+                            moveready:false,
+                            animator:{
+                                timer:false,
+                                startTime:0
+                            }
+                        };
+
+                        create(controllers,t_settings);
+
+                        zb[newid].push({controllers:controllers,settings:t_settings});
+
+                    });
+
                 });
-            });
-            settings.isopen = false;
-        }
-    }
-
-    function setup(objects,settings)
-    {
-        if (objects.length > 0)
-        {
-            var _body = $('body');
-            var defaultBodyOverflow = _body.css('overflow');
-            var defaultMarginRight = _body.css('margin-right');
-            var timeoutSpeed = Math.round(1000/30);
-
-            objects.each(function(){
-                var object = $(this);
-                var delegate = (typeof settings.delegate == "string") ? settings.delegate : '';
-                var t_settings = $.extend({},settings);
-
-                applyDataSettings(object,t_settings);
-                new_zb(object,t_settings);
-
-                t_settings.isopen = false;
-                t_settings.defaultBodyOverflow = defaultBodyOverflow;
-                t_settings.defaultMarginRight = defaultMarginRight;
-                t_settings.timeoutSpeed = timeoutSpeed;
-                t_settings.mouseX = 0;
-                t_settings.mouseY = 0;
-                t_settings.mouseDownX = -999;
-                t_settings.mouseDownY = -999;
-                t_settings.invert = false;
-
-                if (delegate)
-                {
-                    object.on('click',delegate,function(e){
-                        e.preventDefault();
-                        if (!t_settings.isopen) create($(this),t_settings);
-                    });
-                }
-                else
-                {
-                    object.on('click',function(e){
-                        e.preventDefault();
-                        if (!t_settings.isopen) create($(this),t_settings);
-                    });
-                }
-            });
+            }
         }
     }
 
