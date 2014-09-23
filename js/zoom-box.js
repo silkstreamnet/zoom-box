@@ -5,7 +5,8 @@
         renderContainer:false,
         renderOverImage:false,
         zoomSrc:'',
-        close:'',
+        closeText:'',
+        imageClickClose:false,
         refreshRate:30,
         fadeDuration:400,
         onRemove:false,
@@ -55,8 +56,6 @@
         controllers.naturalImgWidth = width;
         controllers.naturalImgHeight = height;
         controllers.$zoomboxImage.attr('src',src);
-        //controllers.$zoomboxImage.css('left',((controllers.$zoombox.width()-width)/2)+'px');
-        //controllers.$zoomboxImage.css('top',((controllers.$zoombox.height()-height)/2)+'px');
         scale(controllers,settings);
         controllers.$zoomboxImage.css('left',((controllers.$zoombox.width()-controllers.$zoomboxImage.width())/2)+'px');
         controllers.$zoomboxImage.css('top',((controllers.$zoombox.height()-controllers.$zoomboxImage.height())/2)+'px');
@@ -285,8 +284,8 @@
         controllers.naturalImgWidth = originalImage.width;
         controllers.naturalImgHeight = originalImage.height;
 
-        var close = (typeof settings.close == "string") ? settings.close : '';
-        var html = '<div class="zoom-box-container"><a href="javascript:void(0);" class="zoom-box-close">'+close+'</a><img class="zoom-box-image" src="'+controllers.originalSrc+'" alt="" /></div>';
+        var closeText = (typeof settings.closeText == "string") ? settings.closeText : '';
+        var html = '<div class="zoom-box-container"><a href="javascript:void(0);" class="zoom-box-close">'+closeText+'</a><img class="zoom-box-image" src="'+controllers.originalSrc+'" alt="" /></div>';
         
         controllers.$renderContainer = (!controllers.renderContainer || (typeof controllers.renderContainer == "object" && controllers.renderContainer != window)) ? controllers.renderContainer: $(controllers.renderContainer);
 
@@ -378,11 +377,14 @@
                 controllers.mouseDownY = e.pageY-zoombox_offset.top;
             }).on('mouseup',function(e){
                 e.preventDefault();
-                var pr = 5; //click range pixels.
-                var zoombox_offset = controllers.$zoombox.offset();
-                if (e.pageX-zoombox_offset.left <= controllers.mouseDownX+pr && e.pageX-zoombox_offset.left >= controllers.mouseDownX-pr && e.pageY-zoombox_offset.top <= controllers.mouseDownY+pr && e.pageY-zoombox_offset.top >= controllers.mouseDownY-pr)
+                if (settings.imageClickClose)
                 {
-                    remove(controllers,settings);
+                    var pr = 5;
+                    var zoombox_offset = controllers.$zoombox.offset();
+                    if (e.pageX-zoombox_offset.left <= controllers.mouseDownX+pr && e.pageX-zoombox_offset.left >= controllers.mouseDownX-pr && e.pageY-zoombox_offset.top <= controllers.mouseDownY+pr && e.pageY-zoombox_offset.top >= controllers.mouseDownY-pr)
+                    {
+                        remove(controllers,settings);
+                    }
                 }
                 controllers.mouseDownX = -999;
                 controllers.mouseDownY = -999;
