@@ -55,10 +55,12 @@
         controllers.naturalImgWidth = width;
         controllers.naturalImgHeight = height;
         controllers.$zoomboxImage.attr('src',src);
-        controllers.$zoomboxImage.css('left',((controllers.$zoombox.width()-width)/2)+'px');
-        controllers.$zoomboxImage.css('top',((controllers.$zoombox.height()-width)/2)+'px');
-        controllers.$zoombox.trigger('mousemove');
+        //controllers.$zoomboxImage.css('left',((controllers.$zoombox.width()-width)/2)+'px');
+        //controllers.$zoomboxImage.css('top',((controllers.$zoombox.height()-height)/2)+'px');
         scale(controllers,settings);
+        controllers.$zoomboxImage.css('left',((controllers.$zoombox.width()-controllers.$zoomboxImage.width())/2)+'px');
+        controllers.$zoomboxImage.css('top',((controllers.$zoombox.height()-controllers.$zoomboxImage.height())/2)+'px');
+        controllers.$zoombox.trigger('mousemove');
     }
 
     function loadImage(controllers,settings)
@@ -175,10 +177,6 @@
         controllers.$zoomboxImage.width(imgWidth);
         controllers.$zoomboxImage.height(imgHeight);
 
-        //var newOffset = controllers.$zoombox.position();
-
-        //controllers.mouseX = newOffset.left + (controllers.$zoombox.width()/2);
-        //controllers.mouseY = newOffset.top + (controllers.$zoombox.height()/2);
         move(controllers,settings);
     }
 
@@ -336,7 +334,9 @@
 
             controllers.$mousetrap.css({
                 'position':'absolute',
-                'z-index':'89'
+                'z-index':'93',
+                'visibility':'hidden',
+                'display':'block'
             });
 
             scale(controllers,settings);
