@@ -9,7 +9,7 @@
     </style>
 </head>
 <body style="margin:0;">
-<div class="zoom-box"><img src="images/9_1.jpg" width="800" /></div>
+<div class="zoom-box" data-zoomsrc="images/9_1.jpg"><img src="images/9_1.jpg" width="800" /></div>
 <div class="zoom-box" style="width:70%;"><img src="images/9_2.jpg" width="500" /></div>
 <script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
 <script type="text/javascript" src="js/zoom-box.js"></script>
@@ -18,20 +18,10 @@
 
         //turned off automatic "renderOverImage" setting, it didn't seem to work well enough. Test it manually by setting "renderOverImage:true"
 
-        var zoomboxopen = false;
-
         $('.zoom-box').on('mouseenter',function(){
-            if (!zoomboxopen)
-            {
-                $(this).ZoomBox();
-                zoomboxopen = true;
-            }
+            $(this).ZoomBox();
         }).on('mouseleave',function(){
-            if (zoomboxopen)
-            {
-                $(this).ZoomBox('remove');
-                zoomboxopen = false;
-            }
+            $(this).ZoomBox('remove');
         });
 
     })();

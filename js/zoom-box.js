@@ -3,7 +3,9 @@
 
     var defaults = {
         renderContainer:false,
-        renderOverImage:false,
+        renderOverImage:true,
+        renderWidth:false,
+        renderHeight:false,
         zoomSrc:'',
         closeText:'',
         imageClickClose:false,
@@ -52,19 +54,24 @@
 
     function loadImageReady(src,width,height,controllers,settings)
     {
+        var zb_width = controllers.$zoombox.width();
+        var zb_height = controllers.$zoombox.height();
+
         controllers.moveready = true;
         controllers.naturalImgWidth = width;
         controllers.naturalImgHeight = height;
         controllers.$zoomboxImage.attr('src',src);
         scale(controllers,settings);
-        controllers.$zoomboxImage.css('left',((controllers.$zoombox.width()-controllers.$zoomboxImage.width())/2)+'px');
-        controllers.$zoomboxImage.css('top',((controllers.$zoombox.height()-controllers.$zoomboxImage.height())/2)+'px');
+        controllers.$zoomboxImage.css('left',((zb_width-controllers.$zoomboxImage.width())/2)+'px');
+        controllers.$zoomboxImage.css('top',((zb_height-controllers.$zoomboxImage.height())/2)+'px');
+        controllers.mouseX = zb_width/2;
+        controllers.mouseY = zb_height/2;
         controllers.$zoombox.trigger('mousemove');
     }
 
     function loadImage(controllers,settings)
     {
-        var src = (controllers.zoomSrc) ? controllers.zoomSrc : controllers.originalSrc;
+        var src = (settings.zoomSrc) ? settings.zoomSrc : controllers.originalSrc;
 
         if (src)
         {
@@ -111,10 +118,14 @@
 
     function scale(controllers,settings)
     {
-        var boxWidth = '100%';
-        var boxHeight = '100%';
+        var boxWidth = (settings.renderWidth !== false) ? settings.renderWidth : '100%';
+        var boxHeight = (settings.renderHeight !== false) ? settings.renderHeight : '100%';
 
         if (settings.renderOverImage)
+        {
+            controllers.$mousetrap.css({'width':'100%','height':'100%'});
+        }
+        else
         {
             var oimage_width = controllers.$oimage.width();
             var oimage_height = controllers.$oimage.height();
@@ -122,12 +133,13 @@
             var parent_width = controllers.$oimage.parent().width();
             var parent_height = controllers.$oimage.parent().height();
 
-            if (oimage_width < parent_width) boxWidth = oimage_width;
-            else boxWidth = parent_width;
+            if (oimage_width < parent_width) controllers.$mousetrap.width(oimage_width);
+            else controllers.$mousetrap.width(parent_width);
 
-            if (oimage_height < parent_height) boxHeight = oimage_height;
-            else boxHeight = parent_height;
+            if (oimage_height < parent_height) controllers.$mousetrap.height(oimage_height);
+            else controllers.$mousetrap.height(parent_height);
         }
+
 
         if (typeof boxWidth == "string" && boxWidth.match(/[0-9]{1,3}%/))
         {
@@ -285,14 +297,14 @@
         controllers.naturalImgHeight = originalImage.height;
 
         var closeText = (typeof settings.closeText == "string") ? settings.closeText : '';
-        var html = '<div class="zoom-box-container"><a href="javascript:void(0);" class="zoom-box-close">'+closeText+'</a><img class="zoom-box-image" src="'+controllers.originalSrc+'" alt="" /></div>';
+        var html = '<div class="zoom-box-container"><img class="zoom-box-image" src="'+controllers.originalSrc+'" alt="" /></div><a href="javascript:void(0);" class="zoom-box-close">'+closeText+'</a>';
+        var mt = '<div class="zoom-box-mousetrap"></div>';
         
-        controllers.$renderContainer = (!controllers.renderContainer || (typeof controllers.renderContainer == "object" && controllers.renderContainer != window)) ? controllers.renderContainer: $(controllers.renderContainer);
+        controllers.$renderContainer = (!settings.renderContainer || (typeof settings.renderContainer == "object" && settings.renderContainer != window)) ? settings.renderContainer: $(settings.renderContainer);
 
         if (!controllers.$renderContainer || !controllers.$renderContainer.length)
         {
             controllers.$renderContainer = controllers.$oimageContainer;
-            //settings.renderOverImage = true;
         }
 
         if (controllers.$renderContainer && controllers.$renderContainer.length)
@@ -302,12 +314,19 @@
                 controllers.$renderContainer = controllers.$renderContainer.eq(0);
             }
 
-            controllers.$oimage.before('<div class="zoom-box-mousetrap"></div>');
+            controllers.$renderContainer.prepend(html);
 
-            if (settings.renderOverImage) controllers.$oimage.before(html);
-            else controllers.$renderContainer.prepend(html);
+            if (settings.renderOverImage)
+            {
+                controllers.$renderContainer.prepend(mt);
+                controllers.$mousetrap = controllers.$renderContainer.find('.zoom-box-mousetrap');
+            }
+            else
+            {
+                controllers.$oimage.before(mt);
+                controllers.$mousetrap = controllers.$oimageContainer.find('.zoom-box-mousetrap');
+            }
 
-            controllers.$mousetrap = controllers.$renderContainer.find('.zoom-box-mousetrap');
             controllers.$zoombox = controllers.$renderContainer.find('.zoom-box-container');
             controllers.$zoomboxImage = controllers.$zoombox.find('.zoom-box-image');
             controllers.$zoomboxClose = controllers.$zoombox.find('.zoom-box-close');
@@ -334,7 +353,6 @@
             controllers.$mousetrap.css({
                 'position':'absolute',
                 'z-index':'93',
-                'visibility':'hidden',
                 'display':'block'
             });
 
@@ -351,24 +369,45 @@
                 e.preventDefault();
             });
 
-            controllers.$zoombox.on('mousemove',function(e){
+            controllers.$mousetrap.on('mousemove',function(e){
                 if (controllers.moveready)
                 {
+                    controllers.invert = false;
+
                     var zoombox_offset = controllers.$zoombox.offset();
                     controllers.mouseX = e.pageX-zoombox_offset.left;
                     controllers.mouseY = e.pageY-zoombox_offset.top;
-                    controllers.invert = false;
+
                     move(controllers,settings);
                 }
             }).on('touchmove',function(e){
                 e.preventDefault();
                 if (controllers.moveready)
                 {
-                    var zoombox_offset = controllers.$zoombox.offset();
-                    controllers.mouseX = e.originalEvent.touches[0].pageX-zoombox_offset.left;
-                    controllers.mouseY = e.originalEvent.touches[0].pageY-zoombox_offset.top;
                     controllers.invert = true;
-                    move(controllers,settings);
+
+                    var zoombox_offset = controllers.$zoombox.offset();
+                    var touchX = e.originalEvent.touches[0].pageX-zoombox_offset.left;
+                    var touchY = e.originalEvent.touches[0].pageY-zoombox_offset.top;
+                    var maxX = controllers.$mousetrap.width();
+                    var maxY = controllers.$mousetrap.height();
+
+                    if (controllers.touchX >= 0 && controllers.touchY >= 0)
+                    {
+                        // new - old = diff
+                        controllers.mouseX += touchX-controllers.touchX;
+                        controllers.mouseY += touchY-controllers.touchY;
+
+                        if (controllers.mouseX > maxX) controllers.mouseX = maxX;
+                        else if (controllers.mouseX < 0) controllers.mouseX = 0;
+                        if (controllers.mouseY > maxY) controllers.mouseY = maxY;
+                        else if (controllers.mouseY < 0) controllers.mouseY = 0;
+
+                        move(controllers,settings);
+                    }
+
+                    controllers.touchX = touchX;
+                    controllers.touchY = touchY;
                 }
             }).on('mousedown',function(e){
                 e.preventDefault();
@@ -388,6 +427,9 @@
                 }
                 controllers.mouseDownX = -999;
                 controllers.mouseDownY = -999;
+            }).on('touchend',function(e){
+                controllers.touchX = -999;
+                controllers.touchY = -999;
             });
 
             controllers.$zoomboxClose.click(function(e){
@@ -463,6 +505,9 @@
 
                 $objects.each(function(){
                     var $object = $(this);
+                    var t_settings = $.extend({},settings);
+                    applyDataSettings($object,t_settings);
+
                     var $imgs = $object;
 
                     if (!getAttr($object,'src'))
@@ -473,9 +518,8 @@
                     $imgs.each(function(){
 
                         var $img = $(this);
-                        var t_settings = $.extend({},settings);
-
-                        applyDataSettings($img,t_settings);
+                        var q_settings = $.extend({},t_settings);
+                        applyDataSettings($img,q_settings);
 
                         var controllers = {
                             id:newid,
@@ -488,7 +532,6 @@
                             $zoomboxClose:false,
                             $mousetrap:false,
                             originalSrc:'',
-                            zoomSrc:'',
                             renderOverImage:false,
                             isopen:false,
                             naturalImgWidth: 0,
@@ -498,6 +541,8 @@
                             mouseY:0,
                             mouseDownX: -999,
                             mouseDownY: -999,
+                            touchX:-999,
+                            touchY:-999,
                             invert:false,
                             moveready:false,
                             animator:{
@@ -506,9 +551,9 @@
                             }
                         };
 
-                        create(controllers,t_settings);
+                        create(controllers,q_settings);
 
-                        zb[newid].push({controllers:controllers,settings:t_settings});
+                        zb[newid].push({controllers:controllers,settings:q_settings});
 
                     });
 
