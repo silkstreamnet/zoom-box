@@ -5,6 +5,7 @@
     var MOUSE_LATENCY = 0.2;
     var TOUCH_LATENCY = 1;
     var TOUCH_END_LATENCY = 0.2;
+    var TOUCH_END_BOOST = 5;
     var DEFAULTS = {
         renderContainer:false,
         renderOverImage:true,
@@ -447,8 +448,8 @@
                     var maxY = controllers.$mousetrap.height();
 
                     // new - old = diff
-                    controllers.mouseX += controllers.touchDiffX;
-                    controllers.mouseY += controllers.touchDiffY;
+                    controllers.mouseX += controllers.touchDiffX*TOUCH_END_BOOST;
+                    controllers.mouseY += controllers.touchDiffY*TOUCH_END_BOOST;
 
                     if (controllers.mouseX > maxX) controllers.mouseX = maxX;
                     else if (controllers.mouseX < 0) controllers.mouseX = 0;
