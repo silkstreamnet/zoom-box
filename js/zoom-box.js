@@ -447,14 +447,23 @@
                     var maxX = controllers.$mousetrap.width();
                     var maxY = controllers.$mousetrap.height();
 
-                    // new - old = diff
-                    controllers.mouseX += controllers.touchDiffX*TOUCH_END_BOOST;
-                    controllers.mouseY += controllers.touchDiffY*TOUCH_END_BOOST;
+                    var bX = Math.abs(controllers.touchDiffX);
+                    var bY = Math.abs(controllers.touchDiffY);
 
-                    if (controllers.mouseX > maxX) controllers.mouseX = maxX;
-                    else if (controllers.mouseX < 0) controllers.mouseX = 0;
-                    if (controllers.mouseY > maxY) controllers.mouseY = maxY;
-                    else if (controllers.mouseY < 0) controllers.mouseY = 0;
+                    // new - old = diff
+                    if (bX >= TOUCH_END_BOOST)
+                    {
+                        controllers.mouseX += controllers.touchDiffX*TOUCH_END_BOOST;
+                        if (controllers.mouseX > maxX) controllers.mouseX = maxX;
+                        else if (controllers.mouseX < 0) controllers.mouseX = 0;
+                    }
+
+                    if (bY >= TOUCH_END_BOOST)
+                    {
+                        controllers.mouseY += controllers.touchDiffY*TOUCH_END_BOOST;
+                        if (controllers.mouseY > maxY) controllers.mouseY = maxY;
+                        else if (controllers.mouseY < 0) controllers.mouseY = 0;
+                    }
 
                     move(controllers,settings);
                 }
