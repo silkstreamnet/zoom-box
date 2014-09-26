@@ -36,6 +36,9 @@ Things to Add
 Updates
 @@@@@@@
 
+=== v2-01 (unstable) ===
+- added touch smoothing
+
 === v2-00 (unstable) ===
 - complete rework of core concepts
 - now works just off of the parent/child relationship
