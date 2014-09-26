@@ -4,6 +4,7 @@
     //static private vars
     var MOUSE_LATENCY = 0.2;
     var TOUCH_LATENCY = 1;
+    var TOUCH_END_LATENCY = 0.2;
     var DEFAULTS = {
         renderContainer:false,
         renderOverImage:true,
@@ -395,14 +396,17 @@
                     var zoombox_offset = controllers.$zoombox.offset();
                     var touchX = e.originalEvent.touches[0].pageX-zoombox_offset.left;
                     var touchY = e.originalEvent.touches[0].pageY-zoombox_offset.top;
-                    var maxX = controllers.$mousetrap.width();
-                    var maxY = controllers.$mousetrap.height();
 
                     if (controllers.touchX >= 0 && controllers.touchY >= 0)
                     {
+                        var maxX = controllers.$mousetrap.width();
+                        var maxY = controllers.$mousetrap.height();
+
                         // new - old = diff
-                        controllers.mouseX += touchX-controllers.touchX;
-                        controllers.mouseY += touchY-controllers.touchY;
+                        controllers.touchDiffX = touchX-controllers.touchX;
+                        controllers.touchDiffY = touchY-controllers.touchY;
+                        controllers.mouseX += controllers.touchDiffX;
+                        controllers.mouseY += controllers.touchDiffY;
 
                         if (controllers.mouseX > maxX) controllers.mouseX = maxX;
                         else if (controllers.mouseX < 0) controllers.mouseX = 0;
@@ -434,6 +438,26 @@
                 controllers.mouseDownX = -999;
                 controllers.mouseDownY = -999;
             }).on('touchend',function(e){
+                controllers.invert = true;
+                controllers.latency = TOUCH_END_LATENCY;
+
+                if (controllers.touchX >= 0 && controllers.touchY >= 0)
+                {
+                    var maxX = controllers.$mousetrap.width();
+                    var maxY = controllers.$mousetrap.height();
+
+                    // new - old = diff
+                    controllers.mouseX += controllers.touchDiffX;
+                    controllers.mouseY += controllers.touchDiffY;
+
+                    if (controllers.mouseX > maxX) controllers.mouseX = maxX;
+                    else if (controllers.mouseX < 0) controllers.mouseX = 0;
+                    if (controllers.mouseY > maxY) controllers.mouseY = maxY;
+                    else if (controllers.mouseY < 0) controllers.mouseY = 0;
+
+                    move(controllers,settings);
+                }
+
                 controllers.touchX = -999;
                 controllers.touchY = -999;
             });
@@ -549,6 +573,8 @@
                             mouseDownY: -999,
                             touchX:-999,
                             touchY:-999,
+                            touchDiffX:0,
+                            touchDiffY:0,
                             invert:false,
                             moveready:false,
                             latency:0.2,
