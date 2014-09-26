@@ -47,10 +47,6 @@ Things to Add
 Updates
 @@@@@@@
 
-=== v2-00 (unstable) ===
-- complete rework of core concepts
-- now works just off of the parent/child relationship
-
 === v1-04 (stable) ===
 - modified touch movement to be inverted like dragging (still 1:1 movement)
 
