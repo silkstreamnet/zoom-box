@@ -36,6 +36,10 @@ Things to Add
 Updates
 @@@@@@@
 
+=== v2-02 (unstable) ===
+- modified method of fade in to help retain display block
+- fixed bug with loose close button
+
 === v2-01 (unstable) ===
 - added touch smoothing
 
