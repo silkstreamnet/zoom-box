@@ -22,9 +22,9 @@
 
         //turned off automatic "renderOverImage" setting, it didn't seem to work well enough. Test it manually by setting "renderOverImage:true"
 
-        $('.zoom-box').on('mouseenter',function(){
+        $('.zoom-box').on('mouseover',function(){
             $(this).ZoomBox();
-        }).on('mouseleave',function(){
+        }).on('mouseout',function(){
             $(this).ZoomBox('remove');
         });
 

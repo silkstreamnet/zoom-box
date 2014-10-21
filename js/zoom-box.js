@@ -295,200 +295,197 @@
 
     function create(controllers,settings)
     {
-        if (typeof settings.onCreate === "function") settings.onCreate(settings);
-
-        var originalImage = getOriginalImage(controllers.$oimage);
-        controllers.originalSrc = originalImage.src;
-        controllers.naturalImgWidth = originalImage.width;
-        controllers.naturalImgHeight = originalImage.height;
-
-        var closeText = (typeof settings.closeText == "string") ? settings.closeText : '';
-        var html = '<div class="zoom-box-container"><a href="javascript:void(0);" class="zoom-box-close">'+closeText+'</a><img class="zoom-box-image" src="'+controllers.originalSrc+'" alt="" /></div>';
-        var mt = '<div class="zoom-box-mousetrap"></div>';
-        
-        controllers.$renderContainer = (!settings.renderContainer || (typeof settings.renderContainer == "object" && settings.renderContainer != window)) ? settings.renderContainer: $(settings.renderContainer);
-
-        if (!controllers.$renderContainer || !controllers.$renderContainer.length)
+        if (!controllers.isopen)
         {
-            controllers.$renderContainer = controllers.$oimageContainer;
-        }
+            if (typeof settings.onCreate === "function") settings.onCreate(settings);
 
-        if (controllers.$renderContainer && controllers.$renderContainer.length)
-        {
-            if (controllers.$renderContainer.length > 1)
+            var originalImage = getOriginalImage(controllers.$oimage);
+            controllers.originalSrc = originalImage.src;
+            controllers.naturalImgWidth = originalImage.width;
+            controllers.naturalImgHeight = originalImage.height;
+
+            var closeText = (typeof settings.closeText == "string") ? settings.closeText : '';
+            var html = '<div class="zoom-box-container"><a href="javascript:void(0);" class="zoom-box-close">'+closeText+'</a><img class="zoom-box-image" src="'+controllers.originalSrc+'" alt="" /></div>';
+            var mt = '<div class="zoom-box-mousetrap"></div>';
+
+            controllers.$renderContainer = (!settings.renderContainer || (typeof settings.renderContainer == "object" && settings.renderContainer != window)) ? settings.renderContainer: $(settings.renderContainer);
+
+            if (!controllers.$renderContainer || !controllers.$renderContainer.length)
             {
-                controllers.$renderContainer = controllers.$renderContainer.eq(0);
+                controllers.$renderContainer = controllers.$oimageContainer;
             }
 
-            controllers.$renderContainer.prepend(html);
-
-            if (settings.renderOverImage)
+            if (controllers.$renderContainer && controllers.$renderContainer.length)
             {
-                controllers.$renderContainer.prepend(mt);
-                controllers.$mousetrap = controllers.$renderContainer.find('.zoom-box-mousetrap');
-            }
-            else
-            {
-                controllers.$oimage.before(mt);
-                controllers.$mousetrap = controllers.$oimageContainer.find('.zoom-box-mousetrap');
-            }
-
-            controllers.$zoombox = controllers.$renderContainer.find('.zoom-box-container');
-            controllers.$zoomboxImage = controllers.$zoombox.find('.zoom-box-image');
-            controllers.$zoomboxClose = controllers.$zoombox.find('.zoom-box-close');
-
-            controllers.$zoombox.css({
-                'position':'absolute',
-                'z-index':'90',
-                'visibility':'hidden',
-                'display':'block'
-            });
-
-            controllers.$zoomboxImage.css({
-                'position':'absolute',
-                'z-index':'91',
-                'max-width':'none',
-                'max-height':'none',
-                'display':'block'
-            });
-
-            controllers.$zoomboxClose.css({
-                'position':'absolute',
-                'z-index':'92'
-            });
-
-            controllers.$mousetrap.css({
-                'position':'absolute',
-                'z-index':'93',
-                'display':'block'
-            });
-
-            scale(controllers,settings);
-
-            controllers.$zoombox.css({
-                'visibility':'visible',
-                'overflow':'hidden',
-                'opacity':0
-            }).animate({
-                'opacity':1
-            },settings.fadeDuration);
-
-            //prevent img drag
-            controllers.$zoomboxImage.on('dragstart',function(e){
-                e.preventDefault();
-            });
-
-            controllers.$mousetrap.on('mousemove',function(e){
-                if (controllers.moveready)
+                if (controllers.$renderContainer.length > 1)
                 {
-                    controllers.invert = false;
-                    controllers.latency = MOUSE_LATENCY;
-
-                    var zoombox_offset = controllers.$zoombox.offset();
-                    controllers.mouseX = e.pageX-zoombox_offset.left;
-                    controllers.mouseY = e.pageY-zoombox_offset.top;
-
-                    move(controllers,settings);
+                    controllers.$renderContainer = controllers.$renderContainer.eq(0);
                 }
-            }).on('touchmove',function(e){
-                e.preventDefault();
-                if (controllers.moveready)
-                {
-                    controllers.invert = true;
-                    controllers.latency = TOUCH_LATENCY;
 
+                controllers.$renderContainer.prepend(html);
+
+                if (settings.renderOverImage)
+                {
+                    controllers.$renderContainer.prepend(mt);
+                    controllers.$mousetrap = controllers.$renderContainer.find('.zoom-box-mousetrap');
+                }
+                else
+                {
+                    controllers.$oimage.before(mt);
+                    controllers.$mousetrap = controllers.$oimageContainer.find('.zoom-box-mousetrap');
+                }
+
+                controllers.$zoombox = controllers.$renderContainer.find('.zoom-box-container');
+                controllers.$zoomboxImage = controllers.$zoombox.find('.zoom-box-image');
+                controllers.$zoomboxClose = controllers.$zoombox.find('.zoom-box-close');
+
+                controllers.$zoombox.css({
+                    'position':'absolute',
+                    'z-index':'90',
+                    'visibility':'hidden',
+                    'display':'block'
+                });
+
+                controllers.$zoomboxImage.css({
+                    'position':'absolute',
+                    'z-index':'91',
+                    'max-width':'none',
+                    'max-height':'none',
+                    'display':'block'
+                });
+
+                controllers.$zoomboxClose.css({
+                    'position':'absolute',
+                    'z-index':'92'
+                });
+
+                controllers.$mousetrap.css({
+                    'position':'absolute',
+                    'z-index':'93',
+                    'display':'block'
+                });
+
+                scale(controllers,settings);
+
+                controllers.$zoombox.css({
+                    'visibility':'visible',
+                    'overflow':'hidden',
+                    'opacity':0
+                }).fadeTo(settings.fadeDuration, 1);
+
+                //prevent img drag
+                controllers.$zoomboxImage.on('dragstart',function(e){
+                    e.preventDefault();
+                });
+
+                controllers.$mousetrap.on('mousemove',function(e){
+                    if (controllers.moveready)
+                    {
+                        controllers.invert = false;
+                        controllers.latency = MOUSE_LATENCY;
+
+                        var zoombox_offset = controllers.$zoombox.offset();
+                        controllers.mouseX = e.pageX-zoombox_offset.left;
+                        controllers.mouseY = e.pageY-zoombox_offset.top;
+
+                        move(controllers,settings);
+                    }
+                }).on('touchmove',function(e){
+                    e.preventDefault();
+                    if (controllers.moveready)
+                    {
+                        controllers.invert = true;
+                        controllers.latency = TOUCH_LATENCY;
+
+                        var zoombox_offset = controllers.$zoombox.offset();
+                        var touchX = e.originalEvent.touches[0].pageX-zoombox_offset.left;
+                        var touchY = e.originalEvent.touches[0].pageY-zoombox_offset.top;
+
+                        if (controllers.touchX >= 0 && controllers.touchY >= 0)
+                        {
+                            var maxX = controllers.$mousetrap.width();
+                            var maxY = controllers.$mousetrap.height();
+
+                            // new - old = diff
+                            controllers.touchDiffX = touchX-controllers.touchX;
+                            controllers.touchDiffY = touchY-controllers.touchY;
+                            controllers.mouseX += controllers.touchDiffX;
+                            controllers.mouseY += controllers.touchDiffY;
+
+                            if (controllers.mouseX > maxX) controllers.mouseX = maxX;
+                            else if (controllers.mouseX < 0) controllers.mouseX = 0;
+                            if (controllers.mouseY > maxY) controllers.mouseY = maxY;
+                            else if (controllers.mouseY < 0) controllers.mouseY = 0;
+
+                            move(controllers,settings);
+                        }
+
+                        controllers.touchX = touchX;
+                        controllers.touchY = touchY;
+                    }
+                }).on('mousedown',function(e){
+                    e.preventDefault();
                     var zoombox_offset = controllers.$zoombox.offset();
-                    var touchX = e.originalEvent.touches[0].pageX-zoombox_offset.left;
-                    var touchY = e.originalEvent.touches[0].pageY-zoombox_offset.top;
+                    controllers.mouseDownX = e.pageX-zoombox_offset.left;
+                    controllers.mouseDownY = e.pageY-zoombox_offset.top;
+                }).on('mouseup',function(e){
+                    e.preventDefault();
+                    if (settings.imageClickClose)
+                    {
+                        var pr = 5;
+                        var zoombox_offset = controllers.$zoombox.offset();
+                        if (e.pageX-zoombox_offset.left <= controllers.mouseDownX+pr && e.pageX-zoombox_offset.left >= controllers.mouseDownX-pr && e.pageY-zoombox_offset.top <= controllers.mouseDownY+pr && e.pageY-zoombox_offset.top >= controllers.mouseDownY-pr)
+                        {
+                            remove(controllers,settings);
+                        }
+                    }
+                    controllers.mouseDownX = -999;
+                    controllers.mouseDownY = -999;
+                }).on('touchend',function(e){
+                    controllers.invert = true;
+                    controllers.latency = TOUCH_END_LATENCY;
 
                     if (controllers.touchX >= 0 && controllers.touchY >= 0)
                     {
                         var maxX = controllers.$mousetrap.width();
                         var maxY = controllers.$mousetrap.height();
 
-                        // new - old = diff
-                        controllers.touchDiffX = touchX-controllers.touchX;
-                        controllers.touchDiffY = touchY-controllers.touchY;
-                        controllers.mouseX += controllers.touchDiffX;
-                        controllers.mouseY += controllers.touchDiffY;
+                        var bX = Math.abs(controllers.touchDiffX);
+                        var bY = Math.abs(controllers.touchDiffY);
 
-                        if (controllers.mouseX > maxX) controllers.mouseX = maxX;
-                        else if (controllers.mouseX < 0) controllers.mouseX = 0;
-                        if (controllers.mouseY > maxY) controllers.mouseY = maxY;
-                        else if (controllers.mouseY < 0) controllers.mouseY = 0;
+                        // new - old = diff
+                        if (bX >= TOUCH_END_BOOST)
+                        {
+                            controllers.mouseX += controllers.touchDiffX*TOUCH_END_BOOST;
+                            if (controllers.mouseX > maxX) controllers.mouseX = maxX;
+                            else if (controllers.mouseX < 0) controllers.mouseX = 0;
+                        }
+
+                        if (bY >= TOUCH_END_BOOST)
+                        {
+                            controllers.mouseY += controllers.touchDiffY*TOUCH_END_BOOST;
+                            if (controllers.mouseY > maxY) controllers.mouseY = maxY;
+                            else if (controllers.mouseY < 0) controllers.mouseY = 0;
+                        }
 
                         move(controllers,settings);
                     }
 
-                    controllers.touchX = touchX;
-                    controllers.touchY = touchY;
-                }
-            }).on('mousedown',function(e){
-                e.preventDefault();
-                var zoombox_offset = controllers.$zoombox.offset();
-                controllers.mouseDownX = e.pageX-zoombox_offset.left;
-                controllers.mouseDownY = e.pageY-zoombox_offset.top;
-            }).on('mouseup',function(e){
-                e.preventDefault();
-                if (settings.imageClickClose)
-                {
-                    var pr = 5;
-                    var zoombox_offset = controllers.$zoombox.offset();
-                    if (e.pageX-zoombox_offset.left <= controllers.mouseDownX+pr && e.pageX-zoombox_offset.left >= controllers.mouseDownX-pr && e.pageY-zoombox_offset.top <= controllers.mouseDownY+pr && e.pageY-zoombox_offset.top >= controllers.mouseDownY-pr)
-                    {
-                        remove(controllers,settings);
-                    }
-                }
-                controllers.mouseDownX = -999;
-                controllers.mouseDownY = -999;
-            }).on('touchend',function(e){
-                controllers.invert = true;
-                controllers.latency = TOUCH_END_LATENCY;
+                    controllers.touchX = -999;
+                    controllers.touchY = -999;
+                });
 
-                if (controllers.touchX >= 0 && controllers.touchY >= 0)
-                {
-                    var maxX = controllers.$mousetrap.width();
-                    var maxY = controllers.$mousetrap.height();
+                controllers.$zoomboxClose.click(function(e){
+                    e.preventDefault();
+                    remove(controllers,settings);
+                });
 
-                    var bX = Math.abs(controllers.touchDiffX);
-                    var bY = Math.abs(controllers.touchDiffY);
+                loadImage(controllers,settings);
 
-                    // new - old = diff
-                    if (bX >= TOUCH_END_BOOST)
-                    {
-                        controllers.mouseX += controllers.touchDiffX*TOUCH_END_BOOST;
-                        if (controllers.mouseX > maxX) controllers.mouseX = maxX;
-                        else if (controllers.mouseX < 0) controllers.mouseX = 0;
-                    }
+                controllers.isopen = true;
 
-                    if (bY >= TOUCH_END_BOOST)
-                    {
-                        controllers.mouseY += controllers.touchDiffY*TOUCH_END_BOOST;
-                        if (controllers.mouseY > maxY) controllers.mouseY = maxY;
-                        else if (controllers.mouseY < 0) controllers.mouseY = 0;
-                    }
-
-                    move(controllers,settings);
-                }
-
-                controllers.touchX = -999;
-                controllers.touchY = -999;
-            });
-
-            controllers.$zoomboxClose.click(function(e){
-                e.preventDefault();
-                remove(controllers,settings);
-            });
-
-            loadImage(controllers,settings);
-
-            controllers.isopen = true;
-
-            if (typeof settings.afterCreate === "function") settings.afterCreate(settings);
-        }
-        else
-        {
-            controllers.isopen = false;
+                if (typeof settings.afterCreate === "function") settings.afterCreate(settings);
+            }
         }
     }
 
@@ -500,7 +497,7 @@
 
             controllers.isopen = false;
 
-            controllers.$zoombox.fadeOut(settings.fadeDuration,function(){
+            controllers.$zoombox.stop(true,false).fadeTo(settings.fadeDuration,0,function(){
                 controllers.$zoombox.remove();
                 controllers.$mousetrap.remove();
 
