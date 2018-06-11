@@ -1,0 +1,10 @@
+{
+  "name": "zoombox",
+  "version": "3.0.0",
+  "author": "Tristan",
+  "devDependencies": {
+    "grunt": "^1.0.0",
+    "grunt-contrib-uglify": "^3.0.0"
+  },
+  "description": ""
+}
