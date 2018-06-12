@@ -269,7 +269,7 @@
             if (controllers.animator.timer === false && (curleft != targetleft || curtop != targettop))
             {
                 controllers.animator.timer = setTimeout(function(){
-                    animatePosition(controllers,settings);
+                        animatePosition(controllers,settings);
                     },
                     timeoutSpeed
                 );
